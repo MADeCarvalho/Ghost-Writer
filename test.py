@@ -26,27 +26,26 @@ def _enterThread(driver) :
 def _getComments(driver) :  
     return driver.find_elements_by_xpath("//*[contains(concat(' ', @class, ' '), ' top-level ')]")
 
-def _getCommentScreenshots(driver, comments):
+def _getCommentScreenshots(driver, comments, post_heading):
+  driver.find_element_by_tag_name('body').send_keys(Keys.CONTROL + Keys.HOME)
   i = 0
+  driver.execute_script("arguments[0].replaceWith(arguments[1]);", post_heading, comments[0])
   for comment in comments:
-    driver.execute_script("arguments[0].scrollIntoView();", comment)
     location = comment.location
     size = comment.size
     png = driver.get_screenshot_as_png()
     im = Image.open(BytesIO(png))
-    left = location['x']
-    top = driver.execute_script("arguments[0].getBoundingClientRect().top;", comment)
-    print("top: {}".format(top))
-  #  top = location['y']
+    left = location['x']+47
+    top = location['y']+72
     right = location['x'] + size['width']
-    bottom = location['y'] + size['height']  
-    browser_navigation_panel_height = driver.execute_script('return window.outerHeight - window.innerHeight;')
-    print(browser_navigation_panel_height)
+    bottom = location['y'] + size['height'] + 125  
     box = (left, top, right, bottom)
     print(box)
     im = im.crop((left, top, right, bottom)) # defines crop points
     im.save('images\\screenshot{}.png'.format(i))
     i = i+1
+    driver.execute_script("arguments[0].replaceWith(arguments[1]);", comment, comments[i])
+
 
 def _clickSeeAllButton(driver):  
   button = driver.find_element_by_xpath("//button[@class='p23tea-7 cMnkIS']")
@@ -66,7 +65,7 @@ if __name__ == "__main__":
   sleep(5)
   comments = _getComments(driver)
   print(len(comments))
-  _getCommentScreenshots(driver, comments)
+  _getCommentScreenshots(driver, comments, post_heading)
 
 
 
