@@ -80,12 +80,12 @@ def _textToSpeech(driver, comment, index):
 
 
 def _titleToSpeech(driver, title):
-    XPATH = ".//h2[@class='s15fpu6f-0 cFFVqm']"
-    headings = title.find_elements_by_xpath(XPATH)
-    text = ''
-    for h in headings:
-        text = text + ' ' + h.text
-    tts = gtts.gTTS(text, lang='en-au')
+    # XPATH = ".//h2[@class='s15fpu6f-0 cFFVqm']"
+    # headings = title.find_elements_by_xpath(XPATH)
+    # text = ''
+    # for h in headings:
+    #     text = text + ' ' + h.text
+    tts = gtts.gTTS(title.text, lang='en-au')
     tts.save('narrations\\000.mp3')
 
 
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     driver = _initDriver()
     driver.get(_currentPage)
     _enterThread(driver)
-    post_heading = driver.find_element_by_xpath(".//div[@class='wek408-9 grAozw _2rszc84L136gWQrkwH6IaM  Post t3_bhjwfo  s1th6nkg-0 knTUAc']")
+    post_heading = driver.find_element_by_tag_name("h2")
     _titleToSpeech(driver, post_heading)
     post_heading.screenshot('images\\000.png')
     _clickSeeAllButton(driver)

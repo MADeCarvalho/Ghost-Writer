@@ -23,18 +23,23 @@ def moviePyVideo():
     narrations = [nar for nar in os.listdir(narrations_folder) if nar.endswith(".mp3")]
     video_clips = []
     audio_clips = []
+    transition = VideoFileClip('utility\\transition.mp4')
+    transition_audio = transition.audio
     for image in images:
         audio_clip = AudioFileClip(__getAudioFile(image))
         audio_clips.append(audio_clip)
         video_clip = ImageClip(os.path.join(image_folder, image)).set_duration(__getAudioFileLength(image))   
         video_clip.set_audio(audio_clip)
         video_clips.append(video_clip)
+        video_clips.append(transition)
+        audio_clips.append(transition_audio)
         audio_clip.close()
         video_clip.close()
     final_audio = concatenate_audioclips(audio_clips)
     final_video = concatenate_videoclips(video_clips, method="compose")
     buildAudio()
-    final_video.write_videofile(os.path.join(video_folder, video_name), fps=24, audio=os.path.join(video_folder, 'concatAudio.mp3'))
+    final_video.write_videofile(os.path.join(video_folder, video_name), fps=15, audio=os.path.join(video_folder, 'concatAudio.mp3'))
+
 
 def buildAudio():
     narrations = [nar for nar in os.listdir(narrations_folder) if nar.endswith('mp3')]
