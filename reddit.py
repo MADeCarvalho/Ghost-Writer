@@ -8,6 +8,7 @@ from io import BytesIO
 import gtts
 import wave
 import videomaker
+import os
 
 _currentPage = 'https://www.reddit.com/r/AskReddit'
 _commentNum = 0
@@ -43,10 +44,10 @@ def _getCommentScreenshots(driver, comments, post_heading):
         size = comment.size
         png = driver.get_screenshot_as_png()
         im = Image.open(BytesIO(png))
-        left = location['x']+47
-        top = location['y']+72
+        left = location['x']
+        top = location['y']
         right = location['x'] + size['width']
-        bottom = location['y'] + size['height'] + 125
+        bottom = location['y'] + size['height']
         box = (left, top, right, bottom)
         im = im.crop(box)  # defines crop points
         bg = Image.new(im.mode, (1280, 720), color=(255, 255, 255))
@@ -56,8 +57,11 @@ def _getCommentScreenshots(driver, comments, post_heading):
         bg.save('images\\comment{}.png'.format(i))
         _textToSpeech(driver, comment, i)
         i = i+1
-        driver.execute_script(
-            "arguments[0].replaceWith(arguments[1]);", comment, comments[i])
+        try:
+            driver.execute_script(
+                "arguments[0].replaceWith(arguments[1]);", comment, comments[i])
+        except(IndexError e):
+            break
 
 
 def _clickSeeAllButton(driver):
@@ -70,13 +74,16 @@ def _clickSeeAllButton(driver):
 
 
 def _textToSpeech(driver, comment, index):
-    XPATH = ".//p[@class='s1w8oh2o-10 bQeEFC']"
-    paragraphs = comment.find_elements_by_xpath(XPATH)
-    text = ''
-    for p in paragraphs:
-        text = text + ' ' + p.text
-    tts = gtts.gTTS(text, lang='en-au')
-    tts.save('narrations\\comment{}.mp3'.format(index))
+    try:
+        XPATH = ".//p[@class='s1w8oh2o-10 bQeEFC']"
+        paragraphs = comment.find_elements_by_xpath(XPATH)
+        text = ''
+        for p in paragraphs:
+            text = text + ' ' + p.text
+        tts = gtts.gTTS(text, lang='en-au')
+        tts.save('narrations\\comment{}.mp3'.format(index))
+    except:
+        os.remove('images\\comment{}.png'.format(index))
 
 
 def _titleToSpeech(driver, title):

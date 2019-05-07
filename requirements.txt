@@ -1,1 +1,7 @@
 selenium==3.141.0
+gTTS==2.0.3
+pillow==6.0.0
+ffpyplayer==4.1.0
+pydub==0.23.1
+mutagen==1.42.0
+moviepy==1.0.0

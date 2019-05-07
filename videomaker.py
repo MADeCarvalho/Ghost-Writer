@@ -1,4 +1,6 @@
 import cv2
+from cv2 import VideoWriter, VideoWriter_fourcc
+import numpy as np
 import os
 from ffpyplayer.player import MediaPlayer
 from mutagen.mp3 import MP3
@@ -18,23 +20,38 @@ def __getAudioFileLength(currentImage):
     audio = MP3(os.path.join(narrations_folder, currentNarration))
     return audio.info.length
 
+def buildTransition():
+    width = 1280
+    height = 720
+    FPS = 24
+    seconds = 1
+
+    fourcc = VideoWriter_fourcc(*'MP42')
+    video = VideoWriter('utility\\transition.avi', fourcc, float(FPS), (width, height))
+
+    for _ in range(FPS*seconds):
+        frame = np.random.randint(0, 256, (height, width, 3), dtype=np.uint8)
+        video.write(frame)
+    video.release()
+
 def moviePyVideo():
     images = [img for img in os.listdir(image_folder) if img.endswith(".png")]
     narrations = [nar for nar in os.listdir(narrations_folder) if nar.endswith(".mp3")]
     video_clips = []
     audio_clips = []
-    transition = VideoFileClip('utility\\transition.mp4')
+    transition = VideoFileClip('utility\\tv_transition.mp4').set_end(0.8)   
     transition_audio = transition.audio
+    transition_audio.write_audiofile('utility\\tv_transition.mp3')
     for image in images:
         audio_clip = AudioFileClip(__getAudioFile(image))
         audio_clips.append(audio_clip)
         video_clip = ImageClip(os.path.join(image_folder, image)).set_duration(__getAudioFileLength(image))   
         video_clip.set_audio(audio_clip)
         video_clips.append(video_clip)
-        video_clips.append(transition)
-        audio_clips.append(transition_audio)
         audio_clip.close()
         video_clip.close()
+        video_clips.append(transition)
+        audio_clips.append(transition.audio)
     final_audio = concatenate_audioclips(audio_clips)
     final_video = concatenate_videoclips(video_clips, method="compose")
     buildAudio()
@@ -44,11 +61,14 @@ def moviePyVideo():
 def buildAudio():
     narrations = [nar for nar in os.listdir(narrations_folder) if nar.endswith('mp3')]
     concat_audio = AudioSegment.silent(duration=10)
+    transition_audio = AudioSegment.from_mp3('utility\\tv_transition.mp3')
     for narr in narrations:
         concat_audio = concat_audio + AudioSegment.from_mp3(os.path.join(narrations_folder, narr))
+        concat_audio = concat_audio + transition_audio
     concat_audio.export(os.path.join(video_folder, 'concatAudio.mp3'), format="mp3")
 
 def buildVideo():
+    #buildTransition()
     images = [img for img in os.listdir(image_folder) if img.endswith(".png")]
     narrations = [nar for nar in os.listdir(narrations_folder) if nar.endswith(".mp3")]
     frame = cv2.imread(os.path.join(image_folder, images[0]))
