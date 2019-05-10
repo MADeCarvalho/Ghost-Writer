@@ -60,7 +60,7 @@ def _getCommentScreenshots(driver, comments, post_heading):
         try:
             driver.execute_script(
                 "arguments[0].replaceWith(arguments[1]);", comment, comments[i])
-        except(IndexError e):
+        except IndexError:
             break
 
 
@@ -80,20 +80,17 @@ def _textToSpeech(driver, comment, index):
         text = ''
         for p in paragraphs:
             text = text + ' ' + p.text
-        tts = gtts.gTTS(text, lang='en-au')
+        tts = gtts.gTTS(text, lang='en-uk')
         tts.save('narrations\\comment{}.mp3'.format(index))
+        #_speedUpAudio('narrations\\comment{}.mp3'.format(index))
     except:
         os.remove('images\\comment{}.png'.format(index))
 
 
 def _titleToSpeech(driver, title):
-    # XPATH = ".//h2[@class='s15fpu6f-0 cFFVqm']"
-    # headings = title.find_elements_by_xpath(XPATH)
-    # text = ''
-    # for h in headings:
-    #     text = text + ' ' + h.text
-    tts = gtts.gTTS(title.text, lang='en-au')
+    tts = gtts.gTTS(title.text)
     tts.save('narrations\\000.mp3')
+    #_speedUpAudio('narrations\\000.mp3')
 
 
 def _scrollFarm(driver):
@@ -102,7 +99,7 @@ def _scrollFarm(driver):
     # Get scroll height
     last_height = driver.execute_script("return document.body.scrollHeight")
     commentCount = 0
-    while commentCount < 40:
+    while commentCount < 80:
         # Scroll down to bottom
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         commentCount = len(_getComments(driver))
@@ -115,15 +112,33 @@ def _scrollFarm(driver):
         last_height = new_height
 
 
+def _speedUpAudio(file):
+    CHANNELS = 1
+    swidth = 2
+    Change_RATE = 1.6
+
+    spf = wave.open(file, 'rb')
+    RATE=spf.getframerate()
+    signal = spf.readframes(-1)
+
+    wf = wave.open('1.6x_'+file, 'wb')
+    wf.setnchannels(CHANNELS)
+    wf.setsampwidth(swidth)
+    wf.setframerate(RATE*Change_RATE)
+    wf.writeframes(signal)
+    wf.close()
+
 if __name__ == "__main__":
     driver = _initDriver()
     driver.get(_currentPage)
     _enterThread(driver)
     post_heading = driver.find_element_by_tag_name("h2")
     _titleToSpeech(driver, post_heading)
-    post_heading.screenshot('images\\000.png')
+    post_div = driver.find_element_by_xpath(".//div[@data-test-id='post-content']")
+    post_div.screenshot('images\\000.png')
     _clickSeeAllButton(driver)
     _scrollFarm(driver)
     comments = _getComments(driver)
     _getCommentScreenshots(driver, comments, post_heading)
+    driver.close()
     videomaker.moviePyVideo()

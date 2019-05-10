@@ -6,6 +6,7 @@ from ffpyplayer.player import MediaPlayer
 from mutagen.mp3 import MP3
 from pydub import AudioSegment
 from moviepy.editor import *
+import math
 
 image_folder = 'images'
 video_folder = 'videos'
@@ -55,7 +56,26 @@ def moviePyVideo():
     final_audio = concatenate_audioclips(audio_clips)
     final_video = concatenate_videoclips(video_clips, method="compose")
     buildAudio()
-    final_video.write_videofile(os.path.join(video_folder, video_name), fps=15, audio=os.path.join(video_folder, 'concatAudio.mp3'))
+    final_video.write_videofile(os.path.join(video_folder, video_name), fps=15)
+    buildBackgroundMusic(os.path.join(video_folder, video_name))
+    audio_background = AudioFileClip('utility\\background_music.mp3')
+    final_audio = CompositeAudioClip([AudioFileClip('videos\\concatAudio.mp3'), audio_background])
+    final_audio.write_audiofile('videos\\final_audio.mp3', fps=15)
+    final_clip = final_video.set_audio(final_audio)
+    final_clip.write_videofile('videos\\bg_music.mp4', fps=15, audio=AudioFileClip('videos\\final_audio.mp3'))
+
+def buildBackgroundMusic(video):
+    my_clip = VideoFileClip(video)   
+    background_music = AudioFileClip('utility\\jazz_lounge.mp3')
+    quotient = math.floor(my_clip.duration / background_music.duration)
+    remainder = my_clip.duration % background_music.duration
+    final_file = []
+    for i in range(quotient):
+        final_file.append(background_music)
+    background_music_remainder = background_music.set_end(my_clip.duration - (background_music.duration * quotient))
+    final_file.append(background_music_remainder)
+    bg_music_file = concatenate_audioclips(final_file)
+    bg_music_file.write_audiofile('utility\\background_music.mp3')
 
 
 def buildAudio():
