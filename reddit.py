@@ -33,6 +33,12 @@ def _getComments(driver):
     XPATH = "//*[contains(concat(' ', @class, ' '), ' top-level ')]"
     return driver.find_elements_by_xpath(XPATH)
 
+def resizeImage(img):
+    basewidth = 1920
+    wpercent = (basewidth / float(img.size[0]))
+    hsize = int((float(img.size[1]) * float(wpercent)))
+    img = img.resize((basewidth, hsize), Image.ANTIALIAS)
+    return img
 
 def _getCommentScreenshots(driver, comments, post_heading):
     driver.find_element_by_tag_name('body').send_keys(Keys.CONTROL + Keys.HOME)
@@ -50,9 +56,11 @@ def _getCommentScreenshots(driver, comments, post_heading):
         bottom = location['y'] + size['height']
         box = (left, top, right, bottom)
         im = im.crop(box)  # defines crop points
-        bg = Image.new(im.mode, (1280, 720), color=(255, 255, 255))
+        im = resizeImage(im)
+        bg = Image.new(im.mode, (1920, 1080), color=(0, 0, 0))
+        bg.paste(Image.open('utility\\sleeping_tiger_bg.jpg'))
         im_width, im_height = im.size
-        box = (round(1280/2) - round(im_width/2), round(720/2) - round(im_height/2))
+        box = (round(1920/2) - round(im_width/2), round(1080/2) - round(im_height/2))
         bg.paste(im, box)
         bg.save('images\\comment{}.png'.format(i))
         _textToSpeech(driver, comment, i)

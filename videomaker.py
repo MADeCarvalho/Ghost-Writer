@@ -26,56 +26,68 @@ def buildTransition():
     height = 720
     FPS = 24
     seconds = 1
-
     fourcc = VideoWriter_fourcc(*'MP42')
     video = VideoWriter('utility\\transition.avi', fourcc, float(FPS), (width, height))
-
     for _ in range(FPS*seconds):
         frame = np.random.randint(0, 256, (height, width, 3), dtype=np.uint8)
         video.write(frame)
     video.release()
+    
+def addAudioToMovie(final_video):
+    final_video.write_videofile(os.path.join(video_folder, video_name), fps=15, audio='videos\\combined.mp3')
+    final_video.close()
+
 
 def moviePyVideo():
+    buildAudio()
+    buildBackgroundMusic()
+    combineAudio("videos\\background_music.mp3","videos\\concatAudio.mp3")
     images = [img for img in os.listdir(image_folder) if img.endswith(".png")]
     narrations = [nar for nar in os.listdir(narrations_folder) if nar.endswith(".mp3")]
     video_clips = []
-    audio_clips = []
-    transition = VideoFileClip('utility\\tv_transition.mp4').set_end(0.8)   
+    transition = VideoFileClip('utility\\tv_transition.mp4').set_end(0.8)  
     transition_audio = transition.audio
     transition_audio.write_audiofile('utility\\tv_transition.mp3')
+    transition.close()
     for image in images:
-        audio_clip = AudioFileClip(__getAudioFile(image))
-        audio_clips.append(audio_clip)
         video_clip = ImageClip(os.path.join(image_folder, image)).set_duration(__getAudioFileLength(image))   
-        video_clip.set_audio(audio_clip)
         video_clips.append(video_clip)
-        audio_clip.close()
         video_clip.close()
         video_clips.append(transition)
-        audio_clips.append(transition.audio)
-    final_audio = concatenate_audioclips(audio_clips)
     final_video = concatenate_videoclips(video_clips, method="compose")
-    buildAudio()
-    final_video.write_videofile(os.path.join(video_folder, video_name), fps=15)
-    buildBackgroundMusic(os.path.join(video_folder, video_name))
-    audio_background = AudioFileClip('utility\\background_music.mp3')
-    final_audio = CompositeAudioClip([AudioFileClip('videos\\concatAudio.mp3'), audio_background])
-    final_audio.write_audiofile('videos\\final_audio.mp3', fps=15)
-    final_clip = final_video.set_audio(final_audio)
-    final_clip.write_videofile('videos\\bg_music.mp4', fps=15, audio=AudioFileClip('videos\\final_audio.mp3'))
+    return final_video
 
-def buildBackgroundMusic(video):
-    my_clip = VideoFileClip(video)   
+
+
+def _getVideoLengthEarly():
+    narrations = [nar for nar in os.listdir(narrations_folder) if nar.endswith('mp3')]   
+    videoLength = 0
+    for nar in narrations:
+        videoLength = videoLength + AudioSegment.from_mp3(os.path.join(narrations_folder, nar)).duration_seconds
+        videoLength = videoLength + AudioSegment.from_mp3("utility\\tv_transition.mp3").duration_seconds
+    return videoLength
+
+def combineAudio(music_file, voice_file):
+    sound1 = AudioSegment.from_file(music_file)-14
+    sound2 = AudioSegment.from_file(voice_file)
+    combined = sound1.overlay(sound2)
+    combined.export("videos\\combined.mp3", format='mp3')
+
+def buildBackgroundMusic():
     background_music = AudioFileClip('utility\\jazz_lounge.mp3')
-    quotient = math.floor(my_clip.duration / background_music.duration)
-    remainder = my_clip.duration % background_music.duration
+    my_clip = AudioFileClip('videos\\concatAudio.mp3')
+    my_clip_duration = my_clip.reader.duration
+    my_clip.close()
+    quotient = math.floor(my_clip_duration / background_music.duration)
+    remainder = my_clip_duration % background_music.duration
     final_file = []
     for i in range(quotient):
         final_file.append(background_music)
-    background_music_remainder = background_music.set_end(my_clip.duration - (background_music.duration * quotient))
+    background_music_remainder = background_music.set_end(my_clip_duration - (background_music.duration * quotient))
     final_file.append(background_music_remainder)
     bg_music_file = concatenate_audioclips(final_file)
-    bg_music_file.write_audiofile('utility\\background_music.mp3')
+    bg_music_file.write_audiofile('videos\\background_music.mp3')
+    
 
 
 def buildAudio():
@@ -93,7 +105,7 @@ def buildVideo():
     narrations = [nar for nar in os.listdir(narrations_folder) if nar.endswith(".mp3")]
     frame = cv2.imread(os.path.join(image_folder, images[0]))
     height, width, layers = frame.shape
-    video = cv2.VideoWriter(os.path.join(video_folder, video_name), 0, 1, (1280, 720))
+    video = cv2.VideoWriter(os.path.join(video_folder, video_name), 0, 1, (1920, 1080))
     concatAudio = AudioSegment.silent(duration=100)
     for image in images:
         audioLength = round(__getAudioFileLength(image))        
@@ -110,4 +122,5 @@ def buildVideo():
     video.release()
 
 if __name__ == "__main__":
-    moviePyVideo()
+   video = moviePyVideo()
+   addAudioToMovie(video)
